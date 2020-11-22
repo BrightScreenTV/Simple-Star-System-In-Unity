@@ -3,6 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+/**
+
+    This software is Copyright BrightScreenTV Limited 2020.
+    You are free to use this code and the associated project. Please credit where possible.
+    THIS IS PROVIDED AS-IS. NO GUARENTEE IS MADE AS TO IT'S FUNCTIONING.
+    
+*/
+
 public class PlayerScript : MonoBehaviour
 {
     public float turnSpeed = 40.0f; //doesn't matter what you set here - it's always zero to begin with in the inspector
@@ -93,12 +101,6 @@ public class PlayerScript : MonoBehaviour
         t += 0.5f * Time.deltaTime;
 
         velocity = Mathf.Clamp(velocity, -maxVelocity, maxVelocity);
-
-        if (starField != null) {
-            Quaternion fieldRotate = transform.rotation;
-            float zRot = transform.rotation.x / 360;
-            starField.transform.RotateAround(starField.transform.position, new Vector3(-transform.rotation.z,0,0), -velocity * 10 * Time.deltaTime);
-        }
 
         Vector3 pos = new Vector3(transform.position.x, transform.position.y, transform.position.z);
 

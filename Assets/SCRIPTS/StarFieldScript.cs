@@ -3,6 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+/**
+
+    This software is Copyright BrightScreenTV Limited 2020.
+    You are free to use this code and the associated project. Please credit where possible.
+    THIS IS PROVIDED AS-IS. NO GUARENTEE IS MADE AS TO IT'S FUNCTIONING.
+
+*/
+
 public enum PlayerDirection {
         Left,
         Right,
@@ -33,6 +41,14 @@ static class PlayerDirectionMethods {
     }
 }
 
+//In order to hold layers of starImages, we'll make a holding class just for the starImages
+public class StarFieldLayer {
+    public List<GameObject> starGrid = new List<GameObject>();  //this is the grid of stars in the layer
+    public float pixelsPerUnit; // this is used for positioning the sprites. Each sprite has this and we store it for speed
+    public Vector2 fullEdgeWidth; //the size of the width and height of the starfield so we can easily put new images at the opposite ends
+    public Vector3 relativePositionFromPlayer; // the relative vector from the player so we can make a large step with player.
+}
+
 public class StarFieldScript : MonoBehaviour
 {
      /**
@@ -53,13 +69,11 @@ public class StarFieldScript : MonoBehaviour
 
     public GameObject starPlate; // the plate of the field made from prefabs
 
-    public Camera satelliteCamera;
+    public Camera satelliteCamera; //this is the camera that's rendered to the plane that's under the player's sprite. We check it's position to determine plate movement
 
     public int LayersCount = 1; // the number of layers of grids of stars to dislpay
 
-    public Text debugText;
-
-    private bool _forceAllPositionsCheck = false;
+    private bool _forceAllPositionsCheck = false; // legacy bool to force an update of all the plates in the event of player position wrap.
 
     /// Hold the layers of 2d star field arrays
     private List<StarFieldLayer> starLayers;
@@ -156,7 +170,7 @@ public class StarFieldScript : MonoBehaviour
         return (top, bottom, left, right);
     }
 
-    //Check which side we're biased towards
+    //Check which side we're biased towards and move a plate in front, if required.
     void checkPositionBias(PlayerDirection checkDirection) {
         List<int> edgePlatesIndicies = new List<int>(); //this will store the edge plate indicies
         int layerIndex = 0;
@@ -206,6 +220,7 @@ public class StarFieldScript : MonoBehaviour
             Vector2 midPoint = new Vector2(((sides.right - sides.left) / 2) + sides.left, ((sides.top - sides.bottom)/2) + sides.bottom);
             float fullEdgeWidth = starLayer.fullEdgeWidth.x;
             float fullEdgeHeight = starLayer.fullEdgeWidth.y;
+            bool changePlate = false;
                 getEdgePlates(checkDirection, layerIndex, sides);
                 foreach (int index in edgePlatesIndicies) {
                     newPos = starLayer.starGrid[index].transform.position;
@@ -213,32 +228,40 @@ public class StarFieldScript : MonoBehaviour
                     {
                         case PlayerDirection.Left:
                         if (satelliteCamera.transform.position.x > midPoint.x) {
-                        newPos = new Vector3(starLayer.starGrid[index].transform.position.x + (fullEdgeWidth * (float)layerGridSize), starLayer.starGrid[index].transform.position.y, starLayer.starGrid[index].transform.position.z);
+                            newPos = new Vector3(starLayer.starGrid[index].transform.position.x + (fullEdgeWidth * (float)layerGridSize), starLayer.starGrid[index].transform.position.y, starLayer.starGrid[index].transform.position.z);
+                            changePlate = true;
                         }
                         break;
                         case PlayerDirection.Right:
                         if (satelliteCamera.transform.position.x < midPoint.x) {
-                        newPos = new Vector3(starLayer.starGrid[index].transform.position.x - (fullEdgeWidth * (float)layerGridSize), starLayer.starGrid[index].transform.position.y, starLayer.starGrid[index].transform.position.z);
+                            newPos = new Vector3(starLayer.starGrid[index].transform.position.x - (fullEdgeWidth * (float)layerGridSize), starLayer.starGrid[index].transform.position.y, starLayer.starGrid[index].transform.position.z);
+                            changePlate = true;
                         }
                         break;
                         case PlayerDirection.Up:
                         if (satelliteCamera.transform.position.y < midPoint.y) {
-                        newPos = new Vector3(starLayer.starGrid[index].transform.position.x, starLayer.starGrid[index].transform.position.y - (fullEdgeHeight * (float)layerGridSize), starLayer.starGrid[index].transform.position.z);
+                            newPos = new Vector3(starLayer.starGrid[index].transform.position.x, starLayer.starGrid[index].transform.position.y - (fullEdgeHeight * (float)layerGridSize), starLayer.starGrid[index].transform.position.z);
+                            changePlate = true;
                         }
                         break;
                         case PlayerDirection.Down:
                         if (satelliteCamera.transform.position.y > midPoint.y) {
-                        newPos = new Vector3(starLayer.starGrid[index].transform.position.x, starLayer.starGrid[index].transform.position.y + (fullEdgeHeight * (float)layerGridSize), starLayer.starGrid[index].transform.position.z);
+                            newPos = new Vector3(starLayer.starGrid[index].transform.position.x, starLayer.starGrid[index].transform.position.y + (fullEdgeHeight * (float)layerGridSize), starLayer.starGrid[index].transform.position.z);
+                            changePlate = true;
                         }
                         break;
                         default: break;
                     }
                     starLayer.starGrid[index].transform.position = newPos;
+                    if (changePlate) {
+                        putRandomFieldInObject(starLayer.starGrid[index]);
+                    }
                 }
             layerIndex ++;
         }
     }
 
+    ///TODO: Provide for a 'hyperspace jump'
     public void largeMoveTo(Vector3 newPosition) {
         foreach (StarFieldLayer layer in starLayers) {
             foreach (GameObject obj in layer.starGrid) {
@@ -253,7 +276,6 @@ public class StarFieldScript : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
     void Update()
     {
         if (_forceAllPositionsCheck) {
@@ -263,28 +285,17 @@ public class StarFieldScript : MonoBehaviour
             checkPositionBias(PlayerDirection.Down);
         } else {
             float xDelta = satelliteCamera.transform.position.x - _oldCamPosition.x; // -ve left, +ve right
-            if (Mathf.Abs(xDelta) > 0.0 || _forceAllPositionsCheck) { checkPositionBias(xDelta < 0 ? PlayerDirection.Right : PlayerDirection.Left);
+            if (Mathf.Abs(xDelta) > 0.0) { checkPositionBias(xDelta < 0 ? PlayerDirection.Right : PlayerDirection.Left); }
             
             float yDelta = satelliteCamera.transform.position.y - _oldCamPosition.y; // +ve up, -ve down
-            if (Mathf.Abs(yDelta) > 0.0 || _forceAllPositionsCheck) { checkPositionBias(yDelta < 0 ? PlayerDirection.Up : PlayerDirection.Down); }
+            if (Mathf.Abs(yDelta) > 0.0) { checkPositionBias(yDelta < 0 ? PlayerDirection.Up : PlayerDirection.Down); }
         }
 
         _oldCamPosition = new Vector2(satelliteCamera.transform.position.x, satelliteCamera.transform.position.y);
         _forceAllPositionsCheck = false;
     }
-    }
 
     public void updateAllPositions() {
         _forceAllPositionsCheck = true;
     }
-
-}
-
-//In order to hold layers of starImages, we'll make a holding class just for the starImages
-
-public class StarFieldLayer {
-    public List<GameObject> starGrid = new List<GameObject>();  //this is the grid of stars in the layer
-    public float pixelsPerUnit; // this is used for positioning the sprites. Each sprite has this and we store it for speed
-    public Vector2 fullEdgeWidth; //the size of the width and height of the starfield so we can easily put new images at the opposite ends
-    public Vector3 relativePositionFromPlayer; // the relative vector from the player so we can make a large step with player.
 }
