@@ -42,6 +42,8 @@ public class PlateScript : MonoBehaviour
         return ray.GetPoint(distance);
         }
 
+/**
+LEGACY CODE
     // Update is called once per frame
     void Update()
     {
@@ -76,4 +78,5 @@ public class PlateScript : MonoBehaviour
             onScreen = false;
         }
     }
+    */
 }
