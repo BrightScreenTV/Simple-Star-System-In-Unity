@@ -1,5 +1,8 @@
 # SimpleStarSystemUnity
 
+
+_Deprecated:_ Please see the newest method of generating this effect [here](https://github.com/BrightScreenTV/Star-System-Sphere-Faker)
+
 This is my way of generating an infinte star system for the backdrop to a game. I didn't want to have 100's of even small particles all needing to be controlled as the player moved to produce a starry backdrop for a space game, so I used the idea of a relatively small number of star 'plates', each quite large, arranged in a grid pattern and projected behind the player. Each plate is just a load of random, white dots on a blank texture.
 
 The main camera is a child of the player's sprite (which in this instance can rotate left and right with the arrow keys, accelerate with 'Q', decelerate with 'A', and come to a complete stop with 'S') so that the player is always locked to the centre of the screen. There is also a plane just behind the player which is the 'star system' and as this is a child of player then it effectively acts as a backdrop. The 'star system' is captured by a camera (the Star System Camera) which is rendered to this plane.
